@@ -1,5 +1,4 @@
 const express = require('express');
-const fs = require('fs');
 const cors = require('cors');
 
 const app = express();
@@ -8,14 +7,12 @@ app.use(express.json());
 
 app.post('/save-location', (req, res) => {
   const { latitude, longitude } = req.body;
-  const log = `Latitude: ${latitude}, Longitude: ${longitude}\n`;
+  const log = `Latitude: ${latitude}, Longitude: ${longitude}`;
 
-  console.log(log);
-res.send('Location saved.');
-);
+  console.log(log);  // Log the location to the Render logs
+  res.send('Location saved.');
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(3000, () => {
+  console.log('Server is running on http://localhost:3000');
 });
