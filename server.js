@@ -10,14 +10,9 @@ app.post('/save-location', (req, res) => {
   const { latitude, longitude } = req.body;
   const log = `Latitude: ${latitude}, Longitude: ${longitude}\n`;
 
-  fs.appendFile('location.txt', log, (err) => {
-    if (err) {
-      console.error('Error writing to file:', err);
-      res.status(500).send('Failed to save location.');
-    } else {
-      res.send('Location saved.');
-    }
-  });
+  console.log(log);
+res.send('Location saved.');
+);
 });
 
 const PORT = process.env.PORT || 3000;
