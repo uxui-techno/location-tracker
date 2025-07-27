@@ -5,74 +5,73 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
+// Ensure uploads/ directory exists
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+  console.log('✅ uploads/ folder created');
+}
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Create 'uploads' directory if it doesn't exist
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
-// Configure Multer for file uploads
+// Multer storage setup
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: function (req, file, cb) {
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
-    cb(null, uniqueName);
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + file.originalname;
+    cb(null, uniqueSuffix);
   }
 });
-const upload = multer({ storage });
 
-// Route to handle form submission
-app.post('/submit-career-form', upload.single('resume'), (req, res) => {
-  const {
-    name,
-    dob,
-    gender,
-    education,
-    marital,
-    preferred,
-    latitude,
-    longitude
-  } = req.body;
+const upload = multer({ storage: storage });
 
-  const resumePath = req.file ? req.file.path : 'No resume uploaded';
+// POST endpoint for form submission
+app.post('/upload', upload.single('resume'), (req, res) => {
+  try {
+    if (!req.file) {
+      throw new Error('Resume not uploaded.');
+    }
 
-  const log = {
-    timestamp: new Date().toISOString(),
-    name,
-    dob,
-    gender,
-    education,
-    marital,
-    preferredLocation: preferred,
-    currentLocation: { latitude, longitude },
-    resume: resumePath
-  };
+    const {
+      name,
+      dob,
+      gender,
+      education,
+      marital,
+      preferredLocation,
+      currentLocation
+    } = req.body;
 
-  const logFilePath = path.join(__dirname, 'submissions.json');
-  let submissions = [];
+    const parsedLocation = currentLocation ? JSON.parse(currentLocation) : {};
 
-  // Read existing submissions
-  if (fs.existsSync(logFilePath)) {
-    const data = fs.readFileSync(logFilePath, 'utf-8');
-    submissions = JSON.parse(data || '[]');
+    const submission = {
+      timestamp: new Date().toISOString(),
+      name,
+      dob,
+      gender,
+      education,
+      marital,
+      preferredLocation,
+      currentLocation: parsedLocation,
+      resume: req.file.path
+    };
+
+    console.log('📥 New submission:', submission);
+    res.status(200).send('Form data received successfully.');
+  } catch (err) {
+    console.error('❌ Upload error:', err.message);
+    res.status(500).send(`Upload failed: ${err.message}`);
   }
-
-  submissions.push(log);
-  fs.writeFileSync(logFilePath, JSON.stringify(submissions, null, 2));
-
-  console.log('New submission:', log);
-  res.send('Form submitted successfully!');
 });
 
 // Start server
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
